@@ -18,6 +18,7 @@ from lsprotocol.types import (
     CompletionList,
     CompletionParams,
     Diagnostic,
+    DiagnosticSeverity,
     DidChangeTextDocumentParams,
     Hover,
     InitializeParams,
@@ -210,6 +211,7 @@ class SublimeSyntaxLanguageServer(LanguageServer):
                         Position(line, endcol),
                     ),
                     message=msg,
+                    severity=DiagnosticSeverity.Error,
                     source="pip-compile",
                 )
                 for (line, col, endcol), msg in diagnostic(doc.path).items()
