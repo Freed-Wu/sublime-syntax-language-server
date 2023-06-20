@@ -34,12 +34,12 @@ from pygls.server import LanguageServer
 PAT = 'Assertion selector "[^"]+" from line (\\d+) failed against line \\d+, column range (\\d+)-(\\d+) \\(with text "[^"]+"\\) has scope \\[([^\\]]+)\\]'
 
 
-def check_extension(uri: str) -> str:
+def check_extension(uri: str) -> Literal["sublime-syntax", "syntax_test", ""]:
     r"""Check extension.
 
     :param uri:
     :type uri: str
-    :rtype: str
+    :rtype: Literal["sublime-syntax", "syntax_test", ""]
     """
     if uri.split(os.path.extsep)[-1] == "sublime-syntax":
         return "sublime-syntax"
