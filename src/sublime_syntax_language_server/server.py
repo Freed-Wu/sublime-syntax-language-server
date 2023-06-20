@@ -49,22 +49,19 @@ def check_extension(uri: str) -> str:
 
 
 def diagnostic(
-    uri: str, syntax_path: str = "."
+    path: str, syntax_path: str = "."
 ) -> dict[tuple[int, int, int], str]:
     r"""Diagnostic.
 
-    :param uri:
-    :type uri: str
+    :param path:
+    :type path: str
     :param syntax_path:
     :type syntax_path: str
     :rtype: dict[tuple[int, int, int], str]
     """
-    filename = uri.strip("file://")
-    if filename == uri:
-        return {}
     try:
         check_output(  # nosec: B603 B607
-            ["syntest", filename, syntax_path], universal_newlines=True
+            ["syntest", path, syntax_path], universal_newlines=True
         )
         return {}
     except CalledProcessError as e:
@@ -203,7 +200,9 @@ class SublimeSyntaxLanguageServer(LanguageServer):
             :type params: DidChangeTextDocumentParams
             :rtype: None
             """
-            text_doc = self.workspace.get_document(params.text_document.uri)
+            doc = self.workspace.get_document(params.text_document.uri)
+            if doc.path is None:
+                return None
             diagnostics = [
                 Diagnostic(
                     range=Range(
@@ -213,11 +212,9 @@ class SublimeSyntaxLanguageServer(LanguageServer):
                     message=msg,
                     source="pip-compile",
                 )
-                for (line, col, endcol), msg in diagnostic(
-                    params.text_document.uri
-                ).items()
+                for (line, col, endcol), msg in diagnostic(doc.path).items()
             ]
-            self.publish_diagnostics(text_doc.uri, diagnostics)
+            self.publish_diagnostics(doc.uri, diagnostics)
 
     def _cursor_line(self, uri: str, position: Position) -> str:
         r"""Cursor line.

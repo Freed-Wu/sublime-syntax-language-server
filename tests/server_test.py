@@ -6,7 +6,7 @@ import pytest
 
 from sublime_syntax_language_server.server import diagnostic, get_document
 
-URI = "file://" + "syntax_test_requirements.txt"
+PATH = "syntax_test_requirements.txt"
 
 
 class Test:
@@ -30,7 +30,7 @@ class Test:
         :rtype: None
         """
         os.chdir(os.path.dirname(__file__))
-        result = diagnostic(URI)
+        result = diagnostic(PATH)
         expected = {
             (
                 "82",
