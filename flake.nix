@@ -11,8 +11,7 @@
         {
           formatter = nixpkgs-fmt;
           packages.default = buildPythonApplication rec {
-            pname = "sublime-syntax-language-server";
-            version = "";
+            name = "sublime-syntax-language-server";
             src = self;
             format = "pyproject";
             disabled = pythonOlder "3.6";
