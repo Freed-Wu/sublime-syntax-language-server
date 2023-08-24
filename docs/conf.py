@@ -5,18 +5,13 @@ https://www.sphinx-doc.org/en/master/usage/configuration.html
 from sublime_syntax_language_server import (
     __version__ as version,  # type: ignore
 )
-
-# from sublime_syntax_language_server._metainfo import (  # type: ignore
-#     author,
-#     copyright,
-#     project,
-# )
+from sublime_syntax_language_server._metainfo import (  # type: ignore
+    author,
+    copyright,
+    project,
+)
 
 __all__ = ["version", "author", "copyright", "project"]
-
-author = "Wu Zhenyu"
-copyright = "2023"
-project = "sublime-syntax-language-server"
 
 # -- Path setup --------------------------------------------------------------
 
