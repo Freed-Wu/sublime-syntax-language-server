@@ -16,6 +16,7 @@ from lsprotocol.types import (
     CompletionItem,
     CompletionItemKind,
     CompletionList,
+    CompletionOptions,
     CompletionParams,
     Diagnostic,
     DiagnosticSeverity,
@@ -118,6 +119,22 @@ def get_document(
     return document
 
 
+def search_doc(document: dict[str, str], keyword: str) -> tuple[str, str]:
+    r"""Search doc.
+
+    :param document:
+    :type document: dict[str, str]
+    :param keyword:
+    :type keyword: str
+    :rtype: tuple[str, str]
+    """
+    doc = document.get(keyword, "")
+    while doc == "" and keyword != "":
+        keyword, _, _ = keyword.rpartition(".")
+        doc = document.get(keyword, "")
+    return (keyword, doc)
+
+
 class SublimeSyntaxLanguageServer(LanguageServer):
     r"""Sublime syntax language server."""
 
@@ -158,17 +175,23 @@ class SublimeSyntaxLanguageServer(LanguageServer):
             )
             if not word:
                 return None
-            doc = self.document.get(word[0])
-            if not doc:
+            keyword = word[0]
+            keyword, doc = search_doc(self.document, keyword)
+            if doc == "" or keyword == "":
                 return None
             return Hover(
-                contents=MarkupContent(kind=MarkupKind.PlainText, value=doc),
+                contents=MarkupContent(
+                    kind=MarkupKind.PlainText, value=keyword + "\n" + doc
+                ),
                 range=word[1],
             )
 
-        @self.feature(TEXT_DOCUMENT_COMPLETION)
-        def completions(params: CompletionParams) -> CompletionList:
-            r"""Completions.
+        @self.feature(
+            TEXT_DOCUMENT_COMPLETION,
+            CompletionOptions(trigger_characters=["."]),
+        )
+        def completion(params: CompletionParams) -> CompletionList:
+            r"""Complete.
 
             :param params:
             :type params: CompletionParams
@@ -179,16 +202,18 @@ class SublimeSyntaxLanguageServer(LanguageServer):
             word = self._cursor_word(
                 params.text_document.uri, params.position, False
             )
-            token = "" if word is None else word[0]
+            keyword = "" if word is None else word[0]
+            prefix, mid, _ = keyword.rpartition(".")
+            length = len(prefix + mid)
             items = [
                 CompletionItem(
                     label=x,
                     kind=CompletionItemKind.Variable,
                     documentation=self.document[x],
-                    insert_text=x,
+                    insert_text=x[length:],
                 )
                 for x in self.document
-                if x.startswith(token)
+                if x.startswith(keyword)
             ]
             return CompletionList(is_incomplete=False, items=items)
 
