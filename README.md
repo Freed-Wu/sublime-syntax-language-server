@@ -37,7 +37,7 @@
 [![pypi/implementation](https://shields.io/pypi/implementation/sublime-syntax-language-server)](https://pypi.org/project/sublime-syntax-language-server/#files)
 [![pypi/pyversions](https://shields.io/pypi/pyversions/sublime-syntax-language-server)](https://pypi.org/project/sublime-syntax-language-server/#files)
 
-Language server for
+Language server and vim plugin for
 [sublime-syntax](https://www.sublimetext.com/docs/syntax.html)
 and
 [syntax-test](https://www.sublimetext.com/docs/syntax.html#testing)'s
@@ -51,17 +51,75 @@ to get support of yaml language server.
 - [x] completion
 - [x] diagnostic: requires [syntest](https://github.com/trishume/syntect)
 
-![document hover](https://github.com/Freed-Wu/requirements-language-server/assets/32936898/17f4063c-3f2c-4956-b60a-996d351ccb79)
+For vim plugin:
 
-![completion](https://github.com/Freed-Wu/sublime-syntax-language-server/assets/32936898/76ca6d66-0e1d-4184-a7d7-2660ba79008c)
+- [x] ftplugin: commentstring, etc
+- [x] compilers: bat, syntest
+- [x] syntax highlight, include incorrect header
 
-![diagnostic](https://user-images.githubusercontent.com/32936898/194603713-1dbc6a4c-cd9a-4894-8cd0-bae0563fa176.png)
+## Document Hover
 
-Read
-[![readthedocs](https://shields.io/readthedocs/sublime-syntax-language-server)](https://sublime-syntax-language-server.readthedocs.io)
-to know more.
+![Document Hover](https://user-images.githubusercontent.com/32936898/246753924-17f4063c-3f2c-4956-b60a-996d351ccb79.jpg)
 
-## Similar Projects
+## Completion
 
-- [sublime-syntax.vim](https://github.com/Freed-Wu/sublime-syntax.vim):
-  syntax highlight for vim
+![Completion](https://user-images.githubusercontent.com/32936898/246778261-76ca6d66-0e1d-4184-a7d7-2660ba79008c.jpg)
+
+## Diagnostic
+
+![Diagnostic](https://user-images.githubusercontent.com/32936898/194603713-1dbc6a4c-cd9a-4894-8cd0-bae0563fa176.png)
+
+## Compilers
+
+Install
+
+- [syntest](https://github.com/trishume/syntect) for `syntax_test_*`
+- [bat](https://github.com/sharkdp/bat) for `*.sublime-syntax`
+
+### syntest
+
+#### Build From Source
+
+```sh
+git clone --depth=1 https://github.com/trishume/syntect
+cd syntect
+cargo build --release --example syntest
+sudo install -D target/release/examples/syntest -t /usr/local/bin
+```
+
+#### For Archlinux
+
+```sh
+yay -S syntest
+```
+
+## Syntax Highlight
+
+Every syntax test file should have a correct header. If you input a typo, syntax
+highlight will tell you:
+
+![Correct](https://user-images.githubusercontent.com/32936898/194894921-0f9167a8-a297-4719-986f-93298111963a.png)
+
+![Incorrect](https://user-images.githubusercontent.com/32936898/194894923-9b82fd5f-2f13-4651-abe5-1a645e737671.png)
+
+If you input correct keyword of sublime syntax file, it will be highlighted as `Keyword`.
+Note `watch` should be `match` and `strings` should be `string`:
+
+![Keyword](https://user-images.githubusercontent.com/32936898/195125476-59f056e1-7001-4aa9-b2ba-62a8fd0e0d2e.png)
+
+## More usages
+
+[`:help sublime-syntax`](doc/sublime-syntax.txt)
+
+## Vim Plugin
+
+You can use
+[branch release](https://github.com/Freed-Wu/sublime-syntax-language-server/tree/release)
+to avoid downloading unnecessary files for vim plugin. Such as for
+[dein.vim](https://github.com/Shougo/dein.vim):
+
+```vim
+call dein#add('Freed-Wu/sublime-syntax-language-server', {
+      \ 'rev': 'release',
+      \ })
+```
