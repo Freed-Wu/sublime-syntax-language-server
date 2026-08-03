@@ -1,25 +1,21 @@
-[build-system]
-requires = ["setuptools_scm[toml] >= 6.2", "setuptools-generate >= 0.0.6"]
-build-backend = "setuptools.build_meta"
-
 # https://setuptools.pypa.io/en/latest/userguide/pyproject_config.html
 [project]
 name = "sublime-syntax-language-server"
 description = "sublime-syntax language server"
 readme = "README.md"
 requires-python = ">= 3.7"
-keywords = ["sublime-syntax", "language server"]
+license = "GPL-3.0-or-later"
+keywords = ["language server", "sublime-syntax"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",
-  "Topic :: Software Development :: Build Tools",
   "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+  "Operating System :: MacOS",
   "Operating System :: Microsoft :: Windows",
   "Operating System :: POSIX",
   "Operating System :: Unix",
-  "Operating System :: MacOS",
-  "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3.7",
   "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
@@ -27,24 +23,67 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
+  "Topic :: Software Development :: Build Tools",
 ]
-dynamic = ["version", "dependencies", "optional-dependencies"]
+dynamic = ["dependencies", "optional-dependencies", "version"]
 
 [[project.authors]]
 name = "Wu Zhenyu"
 email = "wuzhenyu@ustc.edu"
 
-[project.license]
-text = "GPL v3"
-
 [project.urls]
-Homepage = "https://sublime-syntax-language-server.readthedocs.io"
-Download = "https://github.com/Freed-Wu/sublime-syntax-language-server/releases"
 "Bug Report" = "https://github.com/Freed-Wu/sublime-syntax-language-server/issues"
+Download = "https://github.com/Freed-Wu/sublime-syntax-language-server/releases"
+Homepage = "https://sublime-syntax-language-server.readthedocs.io"
 Source = "https://github.com/Freed-Wu/sublime-syntax-language-server"
 
 [project.scripts]
 sublime-syntax-language-server = "sublime_syntax_language_server.__main__:main"
+
+[build-system]
+requires = ["setuptools-generate >= 0.0.6", "setuptools_scm[toml] >= 6.2"]
+build-backend = "setuptools.build_meta"
+
+[tool.codespell]
+ignore-words-list = "ags"
+
+[tool.coverage.report]
+exclude_lines = [
+  "if TYPE_CHECKING:",
+  "if __name__ == .__main__.:",
+  "\\s*import tomli as tomllib",
+]
+
+[tool.doq]
+template_path = "templates"
+
+[tool.mdformat]
+number = true
+
+[tool.ruff]
+line-length = 79
+
+[tool.ruff.lint]
+select = [
+  # pycodestyle
+  "E",
+  # pyflakes
+  "F",
+  # pyupgrade
+  "UP",
+  # flake8-bugbear
+  "B",
+  # flake8-simplify
+  "SIM",
+  # isort
+  "I",
+]
+ignore = ["D205", "D400"]
+preview = true
+
+[tool.ruff.format]
+docstring-code-format = true
+preview = true
 
 [tool.setuptools.package-data]
 sublime_syntax_language_server = ["py.typed", "assets/**"]
@@ -65,43 +104,8 @@ file = "requirements/dev.txt"
 file = "requirements/web.txt"
 # end: scripts/update-pyproject.toml.pl
 
-[tool.setuptools_scm]
-write_to = "src/sublime_syntax_language_server/_version.py"
-
 [tool.setuptools-generate]
 write-to = "src/sublime_syntax_language_server/_metainfo.py"
 
-[tool.mdformat]
-number = true
-
-[tool.codespell]
-ignore-words-list = "ags"
-
-[tool.black]
-line-length = 79
-
-[tool.isort]
-line_length = 79
-profile = "black"
-
-# https://github.com/PyCQA/pydocstyle/issues/418
-[tool.pydocstyle]
-add_ignore = "D205, D400"
-
-[tool.doq]
-template_path = "templates"
-
-[tool.coverage.report]
-exclude_lines = [
-  "if TYPE_CHECKING:",
-  "if __name__ == .__main__.:",
-  "\\s*import tomli as tomllib",
-]
-
-[tool.bandit.assert_used]
-skips = ["*_test.py", "test_*.py"]
-
-[tool.cibuildwheel]
-archs = ["all"]
-before-test = "pip install pytest"
-test-command = "pytest {project}"
+[tool.setuptools_scm]
+write_to = "src/sublime_syntax_language_server/_version.py"

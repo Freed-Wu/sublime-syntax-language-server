@@ -1,6 +1,7 @@
 r"""Server
 ==========
 """
+
 import json
 import os
 import re
@@ -8,7 +9,6 @@ from subprocess import CalledProcessError, check_output  # nosec: B404
 from typing import Any, Literal, Tuple
 
 from lsprotocol.types import (
-    INITIALIZE,
     TEXT_DOCUMENT_COMPLETION,
     TEXT_DOCUMENT_DID_CHANGE,
     TEXT_DOCUMENT_DID_OPEN,
@@ -22,121 +22,22 @@ from lsprotocol.types import (
     DiagnosticSeverity,
     DidChangeTextDocumentParams,
     Hover,
-    InitializeParams,
     MarkupContent,
     MarkupKind,
     Position,
     Range,
     TextDocumentPositionParams,
 )
-from platformdirs import user_cache_dir
 from pygls.server import LanguageServer
-
-# https://github.com/iamcco/coc-diagnostic/pull/136/files
-PAT = 'Assertion selector "[^"]+" from line (\\d+) failed against line \\d+, column range (\\d+)-(\\d+) \\(with text "[^"]+"\\) has scope \\[([^\\]]+)\\]'
-
-
-def check_extension(uri: str) -> Literal["sublime-syntax", "syntax_test", ""]:
-    r"""Check extension.
-
-    :param uri:
-    :type uri: str
-    :rtype: Literal["sublime-syntax", "syntax_test", ""]
-    """
-    if uri.split(os.path.extsep)[-1] == "sublime-syntax":
-        return "sublime-syntax"
-    if os.path.basename(uri).startswith("syntax_test_"):
-        return "syntax_test"
-    return ""
-
-
-def diagnostic(
-    path: str, syntax_path: str = "."
-) -> dict[tuple[int, int, int], str]:
-    r"""Diagnostic.
-
-    :param path:
-    :type path: str
-    :param syntax_path:
-    :type syntax_path: str
-    :rtype: dict[tuple[int, int, int], str]
-    """
-    try:
-        check_output(  # nosec: B603 B607
-            ["syntest", path, syntax_path], universal_newlines=True
-        )
-        return {}
-    except CalledProcessError as e:
-        lines = e.output.splitlines()
-    results = {}
-    for line in lines:
-        m = re.match(PAT, line.strip())
-        if m is None:
-            continue
-        results[(m[1], m[2], m[3])] = m[4]
-    return results
-
-
-def get_document(
-    method: Literal["builtin", "cache", "web"] = "builtin"
-) -> dict[str, str]:
-    r"""Get document. ``builtin`` will use builtin sublime-syntax.json. ``cache``
-    will generate a cache from
-    `<https://www.sublimetext.com/docs/scope_naming.html>`_. ``web`` is same as
-    ``cache`` except it doesn't generate cache. We use ``builtin`` as default.
-    If you want to get the latest result from
-    `<https://www.sublimetext.com/docs/scope_naming.html>`_, you need to
-    install `beautifulsoup4 <https://pypi.org/project/beautifulsoup4>` by
-    ``pip install 'sublime-syntax-language-server[web]'``.
-
-    :param method:
-    :type method: Literal["builtin", "cache", "web"]
-    :rtype: dict[str, str]
-    """
-    if method == "builtin":
-        file = os.path.join(
-            os.path.join(
-                os.path.join(os.path.dirname(__file__), "assets"), "json"
-            ),
-            "sublime-syntax.json",
-        )
-        with open(file, "r") as f:
-            document = json.load(f)
-    elif method == "cache":
-        from .api import init_document
-
-        if not os.path.exists(user_cache_dir("sublime-syntax.json")):
-            document = init_document()
-            with open(user_cache_dir("sublime-syntax.json"), "w") as f:
-                json.dump(document, f)
-        else:
-            with open(user_cache_dir("sublime-syntax.json"), "r") as f:
-                document = json.load(f)
-    else:
-        from .api import init_document
-
-        document = init_document()
-    return document
-
-
-def search_doc(document: dict[str, str], keyword: str) -> tuple[str, str]:
-    r"""Search doc.
-
-    :param document:
-    :type document: dict[str, str]
-    :param keyword:
-    :type keyword: str
-    :rtype: tuple[str, str]
-    """
-    doc = document.get(keyword, "")
-    while doc == "" and keyword != "":
-        keyword, _, _ = keyword.rpartition(".")
-        doc = document.get(keyword, "")
-    return (keyword, doc)
 
 
 class SublimeSyntaxLanguageServer(LanguageServer):
     r"""Sublime syntax language server."""
+
+    # https://github.com/iamcco/coc-diagnostic/pull/136/files
+    regex = re.compile(
+        'Assertion selector "[^"]+" from line (\\d+) failed against line \\d+, column range (\\d+)-(\\d+) \\(with text "[^"]+"\\) has scope \\[([^\\]]+)\\]'
+    )
 
     def __init__(self, *args: Any) -> None:
         r"""Init.
@@ -146,19 +47,14 @@ class SublimeSyntaxLanguageServer(LanguageServer):
         :rtype: None
         """
         super().__init__(*args)
-        self.document = {}
-
-        @self.feature(INITIALIZE)
-        def initialize(params: InitializeParams) -> None:
-            r"""Initialize.
-
-            :param params:
-            :type params: InitializeParams
-            :rtype: None
-            """
-            opts = params.initialization_options
-            method = getattr(opts, "method", "builtin")
-            self.document = get_document(method)  # type: ignore
+        file = os.path.join(
+            os.path.dirname(__file__),
+            "assets",
+            "json",
+            "sublime-syntax.json",
+        )
+        with open(file) as f:
+            self.document = json.load(f)
 
         @self.feature(TEXT_DOCUMENT_HOVER)
         def hover(params: TextDocumentPositionParams) -> Hover | None:
@@ -168,7 +64,7 @@ class SublimeSyntaxLanguageServer(LanguageServer):
             :type params: TextDocumentPositionParams
             :rtype: Hover | None
             """
-            if not check_extension(params.text_document.uri):
+            if not self.check_extension(params.text_document.uri):
                 return None
             word = self._cursor_word(
                 params.text_document.uri, params.position, True
@@ -176,7 +72,7 @@ class SublimeSyntaxLanguageServer(LanguageServer):
             if not word:
                 return None
             keyword = word[0]
-            keyword, doc = search_doc(self.document, keyword)
+            keyword, doc = self.search_doc(self.document, keyword)
             if doc == "" or keyword == "":
                 return None
             return Hover(
@@ -197,7 +93,7 @@ class SublimeSyntaxLanguageServer(LanguageServer):
             :type params: CompletionParams
             :rtype: CompletionList
             """
-            if not check_extension(params.text_document.uri):
+            if not self.check_extension(params.text_document.uri):
                 return CompletionList(is_incomplete=False, items=[])
             word = self._cursor_word(
                 params.text_document.uri, params.position, False
@@ -237,11 +133,71 @@ class SublimeSyntaxLanguageServer(LanguageServer):
                     ),
                     message=msg,
                     severity=DiagnosticSeverity.Error,
-                    source="pip-compile",
                 )
-                for (line, col, endcol), msg in diagnostic(doc.path).items()
+                for (line, col, endcol), msg in self.diagnostic(
+                    doc.path
+                ).items()
             ]
             self.publish_diagnostics(doc.uri, diagnostics)
+
+    @staticmethod
+    def check_extension(
+        uri: str,
+    ) -> Literal["sublime-syntax", "syntax_test", ""]:
+        r"""Check extension.
+
+        :param uri:
+        :type uri: str
+        :rtype: Literal["sublime-syntax", "syntax_test", ""]
+        """
+        basename = os.path.basename(uri)
+        if basename.endswith(".sublime-syntax"):
+            return "sublime-syntax"
+        if basename.startswith("syntax_test_"):
+            return "syntax_test"
+        return ""
+
+    @staticmethod
+    def search_doc(document: dict[str, str], keyword: str) -> tuple[str, str]:
+        r"""Search doc.
+
+        :param document:
+        :type document: dict[str, str]
+        :param keyword:
+        :type keyword: str
+        :rtype: tuple[str, str]
+        """
+        doc = document.get(keyword, "")
+        while doc == "" and keyword != "":
+            keyword, _, _ = keyword.rpartition(".")
+            doc = document.get(keyword, "")
+        return (keyword, doc)
+
+    def diagnostic(
+        self, path: str, syntax_path: str = "."
+    ) -> dict[tuple[int, int, int], str]:
+        r"""Diagnostic.
+
+        :param path:
+        :type path: str
+        :param syntax_path:
+        :type syntax_path: str
+        :rtype: dict[tuple[int, int, int], str]
+        """
+        try:
+            check_output(  # nosec: B603 B607
+                ["syntest", path, syntax_path], universal_newlines=True
+            )
+            return {}
+        except CalledProcessError as e:
+            lines = e.output.splitlines()
+        results = {}
+        for line in lines:
+            m = self.regex.match(line.strip())
+            if m is None:
+                continue
+            results[(m[1], m[2], m[3])] = m[4]
+        return results
 
     def _cursor_line(self, uri: str, position: Position) -> str:
         r"""Cursor line.
