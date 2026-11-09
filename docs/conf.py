@@ -2,6 +2,7 @@ r"""Configure the Sphinx documentation builder.
 
 https://www.sphinx-doc.org/en/master/usage/configuration.html
 """
+
 from sublime_syntax_language_server import (
     __version__ as version,  # type: ignore
 )
